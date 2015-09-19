@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+  <head>
+  <title>Socket.IO chat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; } body { font: 13px Helvetica, Arial; }
+    form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+    form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+    form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+    #messages { list-style-type: none; margin: 0; padding: 0; }
+    #messages li { padding: 5px 10px; }
+    #messages li:nth-child(odd) { background: #eee; }
+    #isTyping { font-style: italic; padding: 5px 10px; }
+  </style>
+  <link rel="stylesheet" href="css/toastr.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.6/angular.min.js"></script>
+  <script src="js/toastr.js"></script>
+  <script>
+    var socket = io();
+
+    angular.module('app',[])
+      .controller('chat', function($scope) {
+        $scope.chat = {};
+        $scope.chat.nickname = window.sessionStorage.getItem("nickname") || "Anonymous";
+
+        // Sockets functions
+        socket.emit('user connected', $scope.chat.nickname);
+        socket.on('user connected', function(msg) {
+          toastr.info(msg);
+        });
+        socket.on('user disconnected', function(msg) {
+          toastr.warning(msg);
+        });
+        socket.on('user typing', function(msg) {
+          $("#isTyping").text(msg);
+        });
+        socket.on('user stop typing', function() {
+          $("#isTyping").text("");
+        });
+        socket.on('chat message', function(msg) {
+          msg = msg.nickname + ": " + msg.message;
+          $("#messages").append($("<li>").text(msg));
+        });
+
+        // $scope functions
+        $scope.send = function() {
+          $scope.chat.nickname = $scope.chat.nickname || "Anonymous" ;
+          window.sessionStorage.setItem("nickname", $scope.chat.nickname);
+          socket.emit('chat message', $scope.chat);
+          $scope.chat.message = "";
+        };
+
+        $scope.typing = function() {
+          socket.emit('user typing', $scope.chat);
+        };
+      });
+  </script>
+  </head>
+<body ng-app="app">
+<div ng-controller="chat">
+  <ul id="messages"></ul>
+  <p id="isTyping"></p>
+  <form ng-submit="send()">
+    <input autocomplete="off" ng-model="chat.nickname" placeholder="Nickname" />
+    <input autocomplete="off" ng-model="chat.message" ng-change="typing()" placeholder="Message" />
+    <button type="submit">Send</button>
+  </form>
+</div>
+</body>
+</html>
