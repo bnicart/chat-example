@@ -11,9 +11,10 @@ io.on('connection', function(socket) {
     socket.broadcast.emit('user connected', user + " has joined!");
   });
 
-  socket.on('chat message', function(msg){
+  socket.on('chat message', function(chat){
+    socket.user = chat.nickname;
     io.emit('user stop typing');
-    io.emit('chat message', msg);
+    io.emit('chat message', chat);
   });
 
   socket.on('user typing', function(data) {
